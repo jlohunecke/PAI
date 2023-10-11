@@ -121,9 +121,9 @@ class Model(object):
 
         # TODO: Fit your model here
 
-        random_indices = self.rng.integers(0, train_x_2D.shape[0], 10000)
-        train_x_2D = train_x_2D[random_indices]
-        train_y = train_y[random_indices]
+        #random_indices = self.rng.integers(0, train_x_2D.shape[0], 10000)
+        #train_x_2D = train_x_2D[random_indices]
+        #train_y = train_y[random_indices]
 
         self.x_m = np.median(train_x_2D[:,0])
         idx_train_x_2D_l = np.where(train_x_2D[:,0] <= self.x_m)[0]
