@@ -40,10 +40,16 @@ class Model(object):
 
         self.kernel = k1 + k2
 
-        self.gp_lu = GaussianProcessRegressor(kernel=self.kernel)
-        self.gp_lb = GaussianProcessRegressor(kernel=self.kernel)
-        self.gp_ru = GaussianProcessRegressor(kernel=self.kernel)
-        self.gp_rb = GaussianProcessRegressor(kernel=self.kernel)
+        self.kernel.k2.k2.alpha_bounds = (1e-06, 1e-03)
+
+        self.gp_lul = GaussianProcessRegressor(kernel=self.kernel)
+        self.gp_lur = GaussianProcessRegressor(kernel=self.kernel)
+        self.gp_lbl = GaussianProcessRegressor(kernel=self.kernel)
+        self.gp_lbr = GaussianProcessRegressor(kernel=self.kernel)
+        self.gp_rul = GaussianProcessRegressor(kernel=self.kernel)
+        self.gp_rur = GaussianProcessRegressor(kernel=self.kernel)
+        self.gp_rbl = GaussianProcessRegressor(kernel=self.kernel)
+        self.gp_rbr = GaussianProcessRegressor(kernel=self.kernel)
 
     def make_predictions(self, test_x_2D: np.ndarray, test_x_AREA: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -60,8 +66,6 @@ class Model(object):
         gp_mean = np.zeros(test_x_2D.shape[0], dtype=float)
         gp_std = np.zeros(test_x_2D.shape[0], dtype=float)
 
-        #gp_mean, gp_std = self.gp.predict(test_x_2D, return_std=True)
-
         idx_test_x_2D_l = np.where(test_x_2D[:, 0] <= self.x_m)[0]
         idx_test_x_2D_r = np.where(test_x_2D[:, 0] > self.x_m)[0]
         idx_test_x_2D_lu = np.where(test_x_2D[:, 1] <= self.y_m_l)[0]
@@ -72,11 +76,31 @@ class Model(object):
         idx_test_x_2D_lb = np.intersect1d(idx_test_x_2D_lb, idx_test_x_2D_l)
         idx_test_x_2D_ru = np.intersect1d(idx_test_x_2D_ru, idx_test_x_2D_r)
         idx_test_x_2D_rb = np.intersect1d(idx_test_x_2D_rb, idx_test_x_2D_r)
+        idx_test_x_2D_lul = np.where(test_x_2D[:, 0] <= self.x_m_lu)[0]
+        idx_test_x_2D_lur = np.where(test_x_2D[:, 0] > self.x_m_lu)[0]
+        idx_test_x_2D_lbl = np.where(test_x_2D[:, 0] <= self.x_m_lb)[0]
+        idx_test_x_2D_lbr = np.where(test_x_2D[:, 0] > self.x_m_lb)[0]
+        idx_test_x_2D_rul = np.where(test_x_2D[:, 0] <= self.x_m_ru)[0]
+        idx_test_x_2D_rur = np.where(test_x_2D[:, 0] > self.x_m_ru)[0]
+        idx_test_x_2D_rbl = np.where(test_x_2D[:, 0] <= self.x_m_rb)[0]
+        idx_test_x_2D_rbr = np.where(test_x_2D[:, 0] > self.x_m_rb)[0]
+        idx_test_x_2D_lul = np.intersect1d(idx_test_x_2D_lul, idx_test_x_2D_lu)
+        idx_test_x_2D_lur = np.intersect1d(idx_test_x_2D_lur, idx_test_x_2D_lu)
+        idx_test_x_2D_lbl = np.intersect1d(idx_test_x_2D_lbl, idx_test_x_2D_lb)
+        idx_test_x_2D_lbr = np.intersect1d(idx_test_x_2D_lbr, idx_test_x_2D_lb)
+        idx_test_x_2D_rul = np.intersect1d(idx_test_x_2D_rul, idx_test_x_2D_ru)
+        idx_test_x_2D_rur = np.intersect1d(idx_test_x_2D_rur, idx_test_x_2D_ru)
+        idx_test_x_2D_rbl = np.intersect1d(idx_test_x_2D_rbl, idx_test_x_2D_rb)
+        idx_test_x_2D_rbr = np.intersect1d(idx_test_x_2D_rbr, idx_test_x_2D_rb)
 
-        gp_mean[idx_test_x_2D_lu], gp_std[idx_test_x_2D_lu] = self.gp_lu.predict(test_x_2D[idx_test_x_2D_lu], return_std=True)
-        gp_mean[idx_test_x_2D_lb], gp_std[idx_test_x_2D_lb] = self.gp_lb.predict(test_x_2D[idx_test_x_2D_lb], return_std=True)
-        gp_mean[idx_test_x_2D_ru], gp_std[idx_test_x_2D_ru] = self.gp_ru.predict(test_x_2D[idx_test_x_2D_ru], return_std=True)
-        gp_mean[idx_test_x_2D_rb], gp_std[idx_test_x_2D_rb] = self.gp_rb.predict(test_x_2D[idx_test_x_2D_rb], return_std=True)
+        gp_mean[idx_test_x_2D_lul], gp_std[idx_test_x_2D_lul] = self.gp_lul.predict(test_x_2D[idx_test_x_2D_lul], return_std=True)
+        gp_mean[idx_test_x_2D_lur], gp_std[idx_test_x_2D_lur] = self.gp_lur.predict(test_x_2D[idx_test_x_2D_lur], return_std=True)
+        gp_mean[idx_test_x_2D_lbl], gp_std[idx_test_x_2D_lbl] = self.gp_lbl.predict(test_x_2D[idx_test_x_2D_lbl], return_std=True)
+        gp_mean[idx_test_x_2D_lbr], gp_std[idx_test_x_2D_lbr] = self.gp_lbr.predict(test_x_2D[idx_test_x_2D_lbr], return_std=True)
+        gp_mean[idx_test_x_2D_rul], gp_std[idx_test_x_2D_rul] = self.gp_rul.predict(test_x_2D[idx_test_x_2D_rul], return_std=True)
+        gp_mean[idx_test_x_2D_rur], gp_std[idx_test_x_2D_rur] = self.gp_rur.predict(test_x_2D[idx_test_x_2D_rur], return_std=True)
+        gp_mean[idx_test_x_2D_rbl], gp_std[idx_test_x_2D_rbl] = self.gp_rbl.predict(test_x_2D[idx_test_x_2D_rbl], return_std=True)
+        gp_mean[idx_test_x_2D_rbr], gp_std[idx_test_x_2D_rbr] = self.gp_rbr.predict(test_x_2D[idx_test_x_2D_rbr], return_std=True)
 
         # TODO: Use the GP posterior to form your predictions here
 
@@ -118,15 +142,48 @@ class Model(object):
         idx_train_x_2D_ru = np.intersect1d(idx_train_x_2D_ru, idx_train_x_2D_r)
         idx_train_x_2D_rb = np.intersect1d(idx_train_x_2D_rb, idx_train_x_2D_r)
 
-        self.gp_lu.fit(train_x_2D[idx_train_x_2D_lu], train_y[idx_train_x_2D_lu])
-        self.gp_lb.fit(train_x_2D[idx_train_x_2D_lb], train_y[idx_train_x_2D_lb])
-        self.gp_ru.fit(train_x_2D[idx_train_x_2D_ru], train_y[idx_train_x_2D_ru])
-        self.gp_rb.fit(train_x_2D[idx_train_x_2D_rb], train_y[idx_train_x_2D_rb])
+        self.x_m_lu = np.median(train_x_2D[idx_train_x_2D_lu,0])
+        self.x_m_lb = np.median(train_x_2D[idx_train_x_2D_lb,0])
+        self.x_m_ru = np.median(train_x_2D[idx_train_x_2D_ru,0])
+        self.x_m_rb = np.median(train_x_2D[idx_train_x_2D_rb,0])
 
-        #random_indices = self.rng.integers(0,train_x_2D.shape[0],2000)
-        #self.gp.fit(train_x_2D[random_indices], train_y[random_indices])
+        idx_train_x_2D_lul = np.where(train_x_2D[:,0] <= self.x_m_lu)[0]
+        idx_train_x_2D_lur = np.where(train_x_2D[:,0] > self.x_m_lu)[0]
+        idx_train_x_2D_lbl = np.where(train_x_2D[:,0] <= self.x_m_lb)[0]
+        idx_train_x_2D_lbr = np.where(train_x_2D[:,0] > self.x_m_lb)[0]
+        idx_train_x_2D_rul = np.where(train_x_2D[:,0] <= self.x_m_ru)[0]
+        idx_train_x_2D_rur = np.where(train_x_2D[:,0] > self.x_m_ru)[0]
+        idx_train_x_2D_rbl = np.where(train_x_2D[:,0] <= self.x_m_rb)[0]
+        idx_train_x_2D_rbr = np.where(train_x_2D[:,0] > self.x_m_rb)[0]
 
-        #print(abs(self.gp.log_marginal_likelihood_value_))
+        idx_train_x_2D_lul = np.intersect1d(idx_train_x_2D_lu, idx_train_x_2D_lul)
+        idx_train_x_2D_lur = np.intersect1d(idx_train_x_2D_lu, idx_train_x_2D_lur)
+        idx_train_x_2D_lbl = np.intersect1d(idx_train_x_2D_lb, idx_train_x_2D_lbl)
+        idx_train_x_2D_lbr = np.intersect1d(idx_train_x_2D_lb, idx_train_x_2D_lbr)
+        idx_train_x_2D_rul = np.intersect1d(idx_train_x_2D_ru, idx_train_x_2D_rul)
+        idx_train_x_2D_rur = np.intersect1d(idx_train_x_2D_ru, idx_train_x_2D_rur)
+        idx_train_x_2D_rbl = np.intersect1d(idx_train_x_2D_rb, idx_train_x_2D_rbl)
+        idx_train_x_2D_rbr = np.intersect1d(idx_train_x_2D_rb, idx_train_x_2D_rbr)
+
+        print(len(idx_train_x_2D_lul), len(idx_train_x_2D_lur), len(idx_train_x_2D_lbl), len(idx_train_x_2D_lbr),
+              len(idx_train_x_2D_rul), len(idx_train_x_2D_rur), len(idx_train_x_2D_rbl), len(idx_train_x_2D_rbr))
+
+        self.gp_lul.fit(train_x_2D[idx_train_x_2D_lul], train_y[idx_train_x_2D_lul])
+        print("1")
+        self.gp_lur.fit(train_x_2D[idx_train_x_2D_lur], train_y[idx_train_x_2D_lur])
+        print("2")
+        self.gp_lbl.fit(train_x_2D[idx_train_x_2D_lbl], train_y[idx_train_x_2D_lbl])
+        print("3")
+        self.gp_lbr.fit(train_x_2D[idx_train_x_2D_lbr], train_y[idx_train_x_2D_lbr])
+        print("4")
+        self.gp_rul.fit(train_x_2D[idx_train_x_2D_rul], train_y[idx_train_x_2D_rul])
+        print("5")
+        self.gp_rur.fit(train_x_2D[idx_train_x_2D_rur], train_y[idx_train_x_2D_rur])
+        print("6")
+        self.gp_rbl.fit(train_x_2D[idx_train_x_2D_rbl], train_y[idx_train_x_2D_rbl])
+        print("7")
+        self.gp_rbr.fit(train_x_2D[idx_train_x_2D_rbr], train_y[idx_train_x_2D_rbr])
+        print("8")
 
         pass
 
