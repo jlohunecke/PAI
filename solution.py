@@ -39,7 +39,11 @@ class Model(object):
         k2 = 0.5**2 * RationalQuadratic(length_scale=1.0, alpha=1.0)
 
         self.kernel = k1 + k2
-        self.gp = GaussianProcessRegressor(kernel=self.kernel)
+
+        self.gp_lu = GaussianProcessRegressor(kernel=self.kernel)
+        self.gp_lb = GaussianProcessRegressor(kernel=self.kernel)
+        self.gp_ru = GaussianProcessRegressor(kernel=self.kernel)
+        self.gp_rb = GaussianProcessRegressor(kernel=self.kernel)
 
     def make_predictions(self, test_x_2D: np.ndarray, test_x_AREA: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -56,7 +60,23 @@ class Model(object):
         gp_mean = np.zeros(test_x_2D.shape[0], dtype=float)
         gp_std = np.zeros(test_x_2D.shape[0], dtype=float)
 
-        gp_mean, gp_std = self.gp.predict(test_x_2D, return_std=True)
+        #gp_mean, gp_std = self.gp.predict(test_x_2D, return_std=True)
+
+        idx_test_x_2D_l = np.where(test_x_2D[:, 0] <= self.x_m)[0]
+        idx_test_x_2D_r = np.where(test_x_2D[:, 0] > self.x_m)[0]
+        idx_test_x_2D_lu = np.where(test_x_2D[:, 1] <= self.y_m_l)[0]
+        idx_test_x_2D_lb = np.where(test_x_2D[:, 1] > self.y_m_l)[0]
+        idx_test_x_2D_ru = np.where(test_x_2D[:, 1] <= self.y_m_r)[0]
+        idx_test_x_2D_rb = np.where(test_x_2D[:, 1] > self.y_m_r)[0]
+        idx_test_x_2D_lu = np.intersect1d(idx_test_x_2D_lu, idx_test_x_2D_l)
+        idx_test_x_2D_lb = np.intersect1d(idx_test_x_2D_lb, idx_test_x_2D_l)
+        idx_test_x_2D_ru = np.intersect1d(idx_test_x_2D_ru, idx_test_x_2D_r)
+        idx_test_x_2D_rb = np.intersect1d(idx_test_x_2D_rb, idx_test_x_2D_r)
+
+        gp_mean[idx_test_x_2D_lu], gp_std[idx_test_x_2D_lu] = self.gp_lu.predict(test_x_2D[idx_test_x_2D_lu], return_std=True)
+        gp_mean[idx_test_x_2D_lb], gp_std[idx_test_x_2D_lb] = self.gp_lb.predict(test_x_2D[idx_test_x_2D_lb], return_std=True)
+        gp_mean[idx_test_x_2D_ru], gp_std[idx_test_x_2D_ru] = self.gp_ru.predict(test_x_2D[idx_test_x_2D_ru], return_std=True)
+        gp_mean[idx_test_x_2D_rb], gp_std[idx_test_x_2D_rb] = self.gp_rb.predict(test_x_2D[idx_test_x_2D_rb], return_std=True)
 
         # TODO: Use the GP posterior to form your predictions here
 
@@ -77,10 +97,36 @@ class Model(object):
 
         # TODO: Fit your model here
 
-        random_indices = self.rng.integers(0,train_x_2D.shape[0],2000)
-        self.gp.fit(train_x_2D[random_indices], train_y[random_indices])
+        random_indices = self.rng.integers(0, train_x_2D.shape[0], 10000)
+        train_x_2D = train_x_2D[random_indices]
+        train_y = train_y[random_indices]
 
-        print(abs(self.gp.log_marginal_likelihood_value_))
+        self.x_m = np.median(train_x_2D[:,0])
+        idx_train_x_2D_l = np.where(train_x_2D[:,0] <= self.x_m)[0]
+        idx_train_x_2D_r = np.where(train_x_2D[:,0] > self.x_m)[0]
+
+        self.y_m_l = np.median(train_x_2D[idx_train_x_2D_l,1])
+        self.y_m_r = np.median(train_x_2D[idx_train_x_2D_r,1])
+
+        idx_train_x_2D_lu = np.where(train_x_2D[:,1] <= self.y_m_l)[0]
+        idx_train_x_2D_lb = np.where(train_x_2D[:,1] > self.y_m_l)[0]
+        idx_train_x_2D_ru = np.where(train_x_2D[:,1] <= self.y_m_r)[0]
+        idx_train_x_2D_rb = np.where(train_x_2D[:,1] > self.y_m_r)[0]
+
+        idx_train_x_2D_lu = np.intersect1d(idx_train_x_2D_lu, idx_train_x_2D_l)
+        idx_train_x_2D_lb = np.intersect1d(idx_train_x_2D_lb, idx_train_x_2D_l)
+        idx_train_x_2D_ru = np.intersect1d(idx_train_x_2D_ru, idx_train_x_2D_r)
+        idx_train_x_2D_rb = np.intersect1d(idx_train_x_2D_rb, idx_train_x_2D_r)
+
+        self.gp_lu.fit(train_x_2D[idx_train_x_2D_lu], train_y[idx_train_x_2D_lu])
+        self.gp_lb.fit(train_x_2D[idx_train_x_2D_lb], train_y[idx_train_x_2D_lb])
+        self.gp_ru.fit(train_x_2D[idx_train_x_2D_ru], train_y[idx_train_x_2D_ru])
+        self.gp_rb.fit(train_x_2D[idx_train_x_2D_rb], train_y[idx_train_x_2D_rb])
+
+        #random_indices = self.rng.integers(0,train_x_2D.shape[0],2000)
+        #self.gp.fit(train_x_2D[random_indices], train_y[random_indices])
+
+        #print(abs(self.gp.log_marginal_likelihood_value_))
 
         pass
 
@@ -220,6 +266,7 @@ def main():
 
     # Extract the city_area information
     train_x_2D, train_x_AREA, test_x_2D, test_x_AREA = extract_city_area_information(train_x, test_x)
+
     # Fit the model
     print('Fitting model')
     model = Model()
