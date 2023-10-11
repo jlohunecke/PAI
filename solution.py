@@ -36,7 +36,7 @@ class Model(object):
         # is to use the data likelihood, also known as the marginal likelihood. See more details here: Wikipedia.
 
         self.kernel = 0.1**2 * RBF(length_scale_bounds=(1e-2, 1e6)) + WhiteKernel(noise_level=0.1**2, noise_level_bounds=(1e-5, 1e5))
-        self.gp = GaussianProcessRegressor(kernel=self.kernel, verbose=True)
+        self.gp = GaussianProcessRegressor(kernel=self.kernel)
 
     def make_predictions(self, test_x_2D: np.ndarray, test_x_AREA: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -58,13 +58,10 @@ class Model(object):
         # TODO: Use the GP posterior to form your predictions here
 
         test_x_AREA = test_x_AREA.astype(np.bool_)
-        predictions = np.random.normal(gp_mean, gp_std)
-        #predictions = gp_mean
+        predictions = gp_mean
         for i in range(len(predictions)):
             if test_x_AREA[i] == 1:
-                predictions[i] += 2*gp_std[i]
-
-        #predictions[test_x_AREA] = predictions[test_x_AREA] * np.sqrt(50)
+                predictions[i] += gp_std[i]
 
         return predictions, gp_mean, gp_std
 
@@ -78,7 +75,9 @@ class Model(object):
         # TODO: Fit your model here
 
         random_indices = self.rng.integers(0,train_x_2D.shape[0],5000)
-        self.gp.fit(train_x_2D[random_indices], train_y[random_indices])
+        self.gp.fit(train_x_2D[random_indices], train_y[random_indices])ex
+
+        print(abs(self.gp.log_marginal_likelihood_value_))
 
         pass
 
