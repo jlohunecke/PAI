@@ -6,7 +6,6 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
-
 # Set `EXTENDED_EVALUATION` to `True` in order to visualize your predictions.
 EXTENDED_EVALUATION = False
 EVALUATION_GRID_POINTS = 300  # Number of grid points used in extended evaluation
@@ -35,23 +34,21 @@ class Model(object):
         # faithfully. With Bayesian models, a commonly used principle in choosing the right kernel or hyperparameters
         # is to use the data likelihood, also known as the marginal likelihood. See more details here: Wikipedia.
 
-        k1 = 0.1**2 * RBF(length_scale_bounds=(1e-2, 1e6)) + WhiteKernel(noise_level=0.1**2, noise_level_bounds=(1e-5, 1e5))
-        k2 = 0.5**2 * RationalQuadratic(length_scale=1.0, alpha=1.0)
+        #k1 = 0.1 ** 2 * RBF(length_scale_bounds=(1e-2, 1e6)) + WhiteKernel(noise_level=0.1 ** 2,
+        #                                                        noise_level_bounds=(1e-5, 1e5))
+        #k2 = 0.5 ** 2 * RationalQuadratic(length_scale=1.0, alpha=1.0)
+        #self.kernel = k1 + k2
 
-        self.kernel = k1 + k2
+        self.kernel = (1 * RBF(length_scale=1.0, length_scale_bounds=(1e-2, 1e2))
+                       + ConstantKernel(constant_value=1.0))
 
-        self.kernel.k2.k2.alpha_bounds = (1e-06, 1e-03)
+        self.gp_lu = GaussianProcessRegressor(kernel=self.kernel)
+        self.gp_lb = GaussianProcessRegressor(kernel=self.kernel)
+        self.gp_ru = GaussianProcessRegressor(kernel=self.kernel)
+        self.gp_rb = GaussianProcessRegressor(kernel=self.kernel)
 
-        self.gp_lul = GaussianProcessRegressor(kernel=self.kernel)
-        self.gp_lur = GaussianProcessRegressor(kernel=self.kernel)
-        self.gp_lbl = GaussianProcessRegressor(kernel=self.kernel)
-        self.gp_lbr = GaussianProcessRegressor(kernel=self.kernel)
-        self.gp_rul = GaussianProcessRegressor(kernel=self.kernel)
-        self.gp_rur = GaussianProcessRegressor(kernel=self.kernel)
-        self.gp_rbl = GaussianProcessRegressor(kernel=self.kernel)
-        self.gp_rbr = GaussianProcessRegressor(kernel=self.kernel)
-
-    def make_predictions(self, test_x_2D: np.ndarray, test_x_AREA: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def make_predictions(self, test_x_2D: np.ndarray, test_x_AREA: np.ndarray) -> typing.Tuple[
+        np.ndarray, np.ndarray, np.ndarray]:
         """
         Predict the pollution concentration for a given set of city_areas.
         :param test_x_2D: city_areas as a 2d NumPy float array of shape (NUM_SAMPLES, 2)
@@ -76,31 +73,15 @@ class Model(object):
         idx_test_x_2D_lb = np.intersect1d(idx_test_x_2D_lb, idx_test_x_2D_l)
         idx_test_x_2D_ru = np.intersect1d(idx_test_x_2D_ru, idx_test_x_2D_r)
         idx_test_x_2D_rb = np.intersect1d(idx_test_x_2D_rb, idx_test_x_2D_r)
-        idx_test_x_2D_lul = np.where(test_x_2D[:, 0] <= self.x_m_lu)[0]
-        idx_test_x_2D_lur = np.where(test_x_2D[:, 0] > self.x_m_lu)[0]
-        idx_test_x_2D_lbl = np.where(test_x_2D[:, 0] <= self.x_m_lb)[0]
-        idx_test_x_2D_lbr = np.where(test_x_2D[:, 0] > self.x_m_lb)[0]
-        idx_test_x_2D_rul = np.where(test_x_2D[:, 0] <= self.x_m_ru)[0]
-        idx_test_x_2D_rur = np.where(test_x_2D[:, 0] > self.x_m_ru)[0]
-        idx_test_x_2D_rbl = np.where(test_x_2D[:, 0] <= self.x_m_rb)[0]
-        idx_test_x_2D_rbr = np.where(test_x_2D[:, 0] > self.x_m_rb)[0]
-        idx_test_x_2D_lul = np.intersect1d(idx_test_x_2D_lul, idx_test_x_2D_lu)
-        idx_test_x_2D_lur = np.intersect1d(idx_test_x_2D_lur, idx_test_x_2D_lu)
-        idx_test_x_2D_lbl = np.intersect1d(idx_test_x_2D_lbl, idx_test_x_2D_lb)
-        idx_test_x_2D_lbr = np.intersect1d(idx_test_x_2D_lbr, idx_test_x_2D_lb)
-        idx_test_x_2D_rul = np.intersect1d(idx_test_x_2D_rul, idx_test_x_2D_ru)
-        idx_test_x_2D_rur = np.intersect1d(idx_test_x_2D_rur, idx_test_x_2D_ru)
-        idx_test_x_2D_rbl = np.intersect1d(idx_test_x_2D_rbl, idx_test_x_2D_rb)
-        idx_test_x_2D_rbr = np.intersect1d(idx_test_x_2D_rbr, idx_test_x_2D_rb)
 
-        gp_mean[idx_test_x_2D_lul], gp_std[idx_test_x_2D_lul] = self.gp_lul.predict(test_x_2D[idx_test_x_2D_lul], return_std=True)
-        gp_mean[idx_test_x_2D_lur], gp_std[idx_test_x_2D_lur] = self.gp_lur.predict(test_x_2D[idx_test_x_2D_lur], return_std=True)
-        gp_mean[idx_test_x_2D_lbl], gp_std[idx_test_x_2D_lbl] = self.gp_lbl.predict(test_x_2D[idx_test_x_2D_lbl], return_std=True)
-        gp_mean[idx_test_x_2D_lbr], gp_std[idx_test_x_2D_lbr] = self.gp_lbr.predict(test_x_2D[idx_test_x_2D_lbr], return_std=True)
-        gp_mean[idx_test_x_2D_rul], gp_std[idx_test_x_2D_rul] = self.gp_rul.predict(test_x_2D[idx_test_x_2D_rul], return_std=True)
-        gp_mean[idx_test_x_2D_rur], gp_std[idx_test_x_2D_rur] = self.gp_rur.predict(test_x_2D[idx_test_x_2D_rur], return_std=True)
-        gp_mean[idx_test_x_2D_rbl], gp_std[idx_test_x_2D_rbl] = self.gp_rbl.predict(test_x_2D[idx_test_x_2D_rbl], return_std=True)
-        gp_mean[idx_test_x_2D_rbr], gp_std[idx_test_x_2D_rbr] = self.gp_rbr.predict(test_x_2D[idx_test_x_2D_rbr], return_std=True)
+        gp_mean[idx_test_x_2D_lu], gp_std[idx_test_x_2D_lu] = self.gp_lu.predict(test_x_2D[idx_test_x_2D_lu],
+                                                                                 return_std=True)
+        gp_mean[idx_test_x_2D_lb], gp_std[idx_test_x_2D_lb] = self.gp_lb.predict(test_x_2D[idx_test_x_2D_lb],
+                                                                                 return_std=True)
+        gp_mean[idx_test_x_2D_ru], gp_std[idx_test_x_2D_ru] = self.gp_ru.predict(test_x_2D[idx_test_x_2D_ru],
+                                                                                 return_std=True)
+        gp_mean[idx_test_x_2D_rb], gp_std[idx_test_x_2D_rb] = self.gp_rb.predict(test_x_2D[idx_test_x_2D_rb],
+                                                                                 return_std=True)
 
         # TODO: Use the GP posterior to form your predictions here
 
@@ -112,7 +93,7 @@ class Model(object):
 
         return predictions, gp_mean, gp_std
 
-    def fitting_model(self, train_y: np.ndarray,train_x_2D: np.ndarray):
+    def fitting_model(self, train_y: np.ndarray, train_x_2D: np.ndarray):
         """
         Fit your model on the given training data.
         :param train_x_2D: Training features as a 2d NumPy float array of shape (NUM_SAMPLES, 2)
@@ -121,71 +102,35 @@ class Model(object):
 
         # TODO: Fit your model here
 
-        #random_indices = self.rng.integers(0, train_x_2D.shape[0], 10000)
-        #train_x_2D = train_x_2D[random_indices]
-        #train_y = train_y[random_indices]
+        random_indices = self.rng.integers(0, train_x_2D.shape[0], 1000)
+        train_x_2D = train_x_2D[random_indices]
+        train_y = train_y[random_indices]
 
-        self.x_m = np.median(train_x_2D[:,0])
-        idx_train_x_2D_l = np.where(train_x_2D[:,0] <= self.x_m)[0]
-        idx_train_x_2D_r = np.where(train_x_2D[:,0] > self.x_m)[0]
+        self.x_m = np.median(train_x_2D[:, 0])
+        idx_train_x_2D_l = np.where(train_x_2D[:, 0] <= self.x_m)[0]
+        idx_train_x_2D_r = np.where(train_x_2D[:, 0] > self.x_m)[0]
 
-        self.y_m_l = np.median(train_x_2D[idx_train_x_2D_l,1])
-        self.y_m_r = np.median(train_x_2D[idx_train_x_2D_r,1])
+        self.y_m_l = np.median(train_x_2D[idx_train_x_2D_l, 1])
+        self.y_m_r = np.median(train_x_2D[idx_train_x_2D_r, 1])
 
-        idx_train_x_2D_lu = np.where(train_x_2D[:,1] <= self.y_m_l)[0]
-        idx_train_x_2D_lb = np.where(train_x_2D[:,1] > self.y_m_l)[0]
-        idx_train_x_2D_ru = np.where(train_x_2D[:,1] <= self.y_m_r)[0]
-        idx_train_x_2D_rb = np.where(train_x_2D[:,1] > self.y_m_r)[0]
+        idx_train_x_2D_lu = np.where(train_x_2D[:, 1] <= self.y_m_l)[0]
+        idx_train_x_2D_lb = np.where(train_x_2D[:, 1] > self.y_m_l)[0]
+        idx_train_x_2D_ru = np.where(train_x_2D[:, 1] <= self.y_m_r)[0]
+        idx_train_x_2D_rb = np.where(train_x_2D[:, 1] > self.y_m_r)[0]
 
         idx_train_x_2D_lu = np.intersect1d(idx_train_x_2D_lu, idx_train_x_2D_l)
         idx_train_x_2D_lb = np.intersect1d(idx_train_x_2D_lb, idx_train_x_2D_l)
         idx_train_x_2D_ru = np.intersect1d(idx_train_x_2D_ru, idx_train_x_2D_r)
         idx_train_x_2D_rb = np.intersect1d(idx_train_x_2D_rb, idx_train_x_2D_r)
 
-        self.x_m_lu = np.median(train_x_2D[idx_train_x_2D_lu,0])
-        self.x_m_lb = np.median(train_x_2D[idx_train_x_2D_lb,0])
-        self.x_m_ru = np.median(train_x_2D[idx_train_x_2D_ru,0])
-        self.x_m_rb = np.median(train_x_2D[idx_train_x_2D_rb,0])
+        self.gp_lu.fit(train_x_2D[idx_train_x_2D_lu], train_y[idx_train_x_2D_lu])
+        self.gp_lb.fit(train_x_2D[idx_train_x_2D_lb], train_y[idx_train_x_2D_lb])
+        self.gp_ru.fit(train_x_2D[idx_train_x_2D_ru], train_y[idx_train_x_2D_ru])
+        self.gp_rb.fit(train_x_2D[idx_train_x_2D_rb], train_y[idx_train_x_2D_rb])
 
-        idx_train_x_2D_lul = np.where(train_x_2D[:,0] <= self.x_m_lu)[0]
-        idx_train_x_2D_lur = np.where(train_x_2D[:,0] > self.x_m_lu)[0]
-        idx_train_x_2D_lbl = np.where(train_x_2D[:,0] <= self.x_m_lb)[0]
-        idx_train_x_2D_lbr = np.where(train_x_2D[:,0] > self.x_m_lb)[0]
-        idx_train_x_2D_rul = np.where(train_x_2D[:,0] <= self.x_m_ru)[0]
-        idx_train_x_2D_rur = np.where(train_x_2D[:,0] > self.x_m_ru)[0]
-        idx_train_x_2D_rbl = np.where(train_x_2D[:,0] <= self.x_m_rb)[0]
-        idx_train_x_2D_rbr = np.where(train_x_2D[:,0] > self.x_m_rb)[0]
-
-        idx_train_x_2D_lul = np.intersect1d(idx_train_x_2D_lu, idx_train_x_2D_lul)
-        idx_train_x_2D_lur = np.intersect1d(idx_train_x_2D_lu, idx_train_x_2D_lur)
-        idx_train_x_2D_lbl = np.intersect1d(idx_train_x_2D_lb, idx_train_x_2D_lbl)
-        idx_train_x_2D_lbr = np.intersect1d(idx_train_x_2D_lb, idx_train_x_2D_lbr)
-        idx_train_x_2D_rul = np.intersect1d(idx_train_x_2D_ru, idx_train_x_2D_rul)
-        idx_train_x_2D_rur = np.intersect1d(idx_train_x_2D_ru, idx_train_x_2D_rur)
-        idx_train_x_2D_rbl = np.intersect1d(idx_train_x_2D_rb, idx_train_x_2D_rbl)
-        idx_train_x_2D_rbr = np.intersect1d(idx_train_x_2D_rb, idx_train_x_2D_rbr)
-
-        print(len(idx_train_x_2D_lul), len(idx_train_x_2D_lur), len(idx_train_x_2D_lbl), len(idx_train_x_2D_lbr),
-              len(idx_train_x_2D_rul), len(idx_train_x_2D_rur), len(idx_train_x_2D_rbl), len(idx_train_x_2D_rbr))
-
-        self.gp_lul.fit(train_x_2D[idx_train_x_2D_lul], train_y[idx_train_x_2D_lul])
-        print("1")
-        self.gp_lur.fit(train_x_2D[idx_train_x_2D_lur], train_y[idx_train_x_2D_lur])
-        print("2")
-        self.gp_lbl.fit(train_x_2D[idx_train_x_2D_lbl], train_y[idx_train_x_2D_lbl])
-        print("3")
-        self.gp_lbr.fit(train_x_2D[idx_train_x_2D_lbr], train_y[idx_train_x_2D_lbr])
-        print("4")
-        self.gp_rul.fit(train_x_2D[idx_train_x_2D_rul], train_y[idx_train_x_2D_rul])
-        print("5")
-        self.gp_rur.fit(train_x_2D[idx_train_x_2D_rur], train_y[idx_train_x_2D_rur])
-        print("6")
-        self.gp_rbl.fit(train_x_2D[idx_train_x_2D_rbl], train_y[idx_train_x_2D_rbl])
-        print("7")
-        self.gp_rbr.fit(train_x_2D[idx_train_x_2D_rbr], train_y[idx_train_x_2D_rbr])
-        print("8")
-
+        print(-self.gp_lu.log_marginal_likelihood())
         pass
+
 
 # You don't have to change this function
 def cost_function(ground_truth: np.ndarray, predictions: np.ndarray, AREA_idxs: np.ndarray) -> float:
@@ -210,6 +155,7 @@ def cost_function(ground_truth: np.ndarray, predictions: np.ndarray, AREA_idxs: 
     # Weigh the cost and return the average
     return np.mean(cost * weights)
 
+
 # You don't have to change this function
 def is_in_circle(coor, circle_coor):
     """
@@ -218,9 +164,10 @@ def is_in_circle(coor, circle_coor):
     :param circle_coor: 3D coordinate of the circle center and its radius
     :return: True if the coordinate is inside the circle, False otherwise
     """
-    return (coor[0] - circle_coor[0])**2 + (coor[1] - circle_coor[1])**2 < circle_coor[2]**2
+    return (coor[0] - circle_coor[0]) ** 2 + (coor[1] - circle_coor[1]) ** 2 < circle_coor[2] ** 2
 
-# You don't have to change this function 
+
+# You don't have to change this function
 def determine_city_area_idx(visualization_xs_2D):
     """
     Determines the city_area index for each coordinate in the visualization grid.
@@ -229,27 +176,28 @@ def determine_city_area_idx(visualization_xs_2D):
     """
     # Circles coordinates
     circles = np.array([[0.5488135, 0.71518937, 0.17167342],
-                    [0.79915856, 0.46147936, 0.1567626 ],
-                    [0.26455561, 0.77423369, 0.10298338],
-                    [0.6976312,  0.06022547, 0.04015634],
-                    [0.31542835, 0.36371077, 0.17985623],
-                    [0.15896958, 0.11037514, 0.07244247],
-                    [0.82099323, 0.09710128, 0.08136552],
-                    [0.41426299, 0.0641475,  0.04442035],
-                    [0.09394051, 0.5759465,  0.08729856],
-                    [0.84640867, 0.69947928, 0.04568374],
-                    [0.23789282, 0.934214,   0.04039037],
-                    [0.82076712, 0.90884372, 0.07434012],
-                    [0.09961493, 0.94530153, 0.04755969],
-                    [0.88172021, 0.2724369,  0.04483477],
-                    [0.9425836,  0.6339977,  0.04979664]])
-    
+                        [0.79915856, 0.46147936, 0.1567626],
+                        [0.26455561, 0.77423369, 0.10298338],
+                        [0.6976312, 0.06022547, 0.04015634],
+                        [0.31542835, 0.36371077, 0.17985623],
+                        [0.15896958, 0.11037514, 0.07244247],
+                        [0.82099323, 0.09710128, 0.08136552],
+                        [0.41426299, 0.0641475, 0.04442035],
+                        [0.09394051, 0.5759465, 0.08729856],
+                        [0.84640867, 0.69947928, 0.04568374],
+                        [0.23789282, 0.934214, 0.04039037],
+                        [0.82076712, 0.90884372, 0.07434012],
+                        [0.09961493, 0.94530153, 0.04755969],
+                        [0.88172021, 0.2724369, 0.04483477],
+                        [0.9425836, 0.6339977, 0.04979664]])
+
     visualization_xs_AREA = np.zeros((visualization_xs_2D.shape[0],))
 
-    for i,coor in enumerate(visualization_xs_2D):
+    for i, coor in enumerate(visualization_xs_2D):
         visualization_xs_AREA[i] = any([is_in_circle(coor, circ) for circ in circles])
 
     return visualization_xs_AREA
+
 
 # You don't have to change this function
 def perform_extended_evaluation(model: Model, output_dir: str = '/results'):
@@ -267,7 +215,7 @@ def perform_extended_evaluation(model: Model, output_dir: str = '/results'):
     )
     visualization_xs_2D = np.stack((grid_lon.flatten(), grid_lat.flatten()), axis=1)
     visualization_xs_AREA = determine_city_area_idx(visualization_xs_2D)
-    
+
     # Obtain predictions, means, and stddevs over the entire map
     predictions, gp_mean, gp_stddev = model.make_predictions(visualization_xs_2D, visualization_xs_AREA)
     predictions = np.reshape(predictions, (EVALUATION_GRID_POINTS, EVALUATION_GRID_POINTS))
@@ -279,7 +227,7 @@ def perform_extended_evaluation(model: Model, output_dir: str = '/results'):
     fig, ax = plt.subplots()
     ax.set_title('Extended visualization of task 1')
     im = ax.imshow(predictions, vmin=vmin, vmax=vmax)
-    cbar = fig.colorbar(im, ax = ax)
+    cbar = fig.colorbar(im, ax=ax)
 
     # Save figure to pdf
     figure_path = os.path.join(output_dir, 'extended_evaluation.pdf')
@@ -288,7 +236,9 @@ def perform_extended_evaluation(model: Model, output_dir: str = '/results'):
 
     plt.show()
 
-def extract_city_area_information(train_x: np.ndarray, test_x: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+
+def extract_city_area_information(train_x: np.ndarray, test_x: np.ndarray) -> typing.Tuple[
+    np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Extracts the city_area information from the training and test features.
     :param train_x: Training features
@@ -301,7 +251,7 @@ def extract_city_area_information(train_x: np.ndarray, test_x: np.ndarray) -> ty
     test_x_2D = np.zeros((test_x.shape[0], 2), dtype=float)
     test_x_AREA = np.zeros((test_x.shape[0],), dtype=bool)
 
-    #TODO: Extract the city_area information from the training and test features
+    # TODO: Extract the city_area information from the training and test features
 
     train_x_2D = train_x[:, :2]
     train_x_AREA = train_x[:, 2]
@@ -313,6 +263,7 @@ def extract_city_area_information(train_x: np.ndarray, test_x: np.ndarray) -> ty
     assert train_x_AREA.ndim == 1 and test_x_AREA.ndim == 1
 
     return train_x_2D, train_x_AREA, test_x_2D, test_x_AREA
+
 
 # you don't have to change this function
 def main():
@@ -327,7 +278,7 @@ def main():
     # Fit the model
     print('Fitting model')
     model = Model()
-    model.fitting_model(train_y,train_x_2D)
+    model.fitting_model(train_y, train_x_2D)
 
     # Predict on the test features
     print('Predicting on test features')
@@ -336,6 +287,7 @@ def main():
 
     if EXTENDED_EVALUATION:
         perform_extended_evaluation(model, output_dir='.')
+
 
 if __name__ == "__main__":
     main()
